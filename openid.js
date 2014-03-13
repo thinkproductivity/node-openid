@@ -33,6 +33,7 @@ var convert = require('./lib/convert'),
     querystring = require('querystring'),
     url = require('url'),
     xrds = require('./lib/xrds');
+    log = require('../../lib/logger')('openid');
 
 var _associations = {};
 var _discoveries = {};
@@ -211,7 +212,7 @@ var _proxyRequest = function(protocol, options)
 
 var _get = function(getUrl, params, callback, redirects, timeout)
 {
-  console.log("_get using timeout=" + timeout + "getUrl=" + JSON.stringify(getUrl));
+  log.debug("_get using timeout=" + timeout + "getUrl=" + JSON.stringify(getUrl));
   redirects = redirects || 5;
   getUrl = url.parse(_buildUrl(getUrl, params));
 
@@ -260,10 +261,10 @@ var _get = function(getUrl, params, callback, redirects, timeout)
     res.on('close', function() { done(); });
   })
   if (timeout != null) {
-    console.log("_get using timeout=" + timeout);
+    log.debug("_get using timeout=" + timeout);
     request.setTimeout(timeout, function()
     {
-      console.log("_get timed out - aborting");
+      log.debug("_get timed out - aborting");
       request.abort();
     });
   }
@@ -275,7 +276,7 @@ var _get = function(getUrl, params, callback, redirects, timeout)
 
 var _post = function(postUrl, data, callback, redirects)
 {
-  console.log("_post using postUrl=" + JSON.stringify(postUrl));
+  log.debug("_post using postUrl=" + JSON.stringify(postUrl));
   redirects = redirects || 5;
   postUrl = url.parse(postUrl);
 
@@ -575,10 +576,10 @@ var _resolveHtml = function(identifier, callback, hops, data)
 
   if(data == null)
   {
-    console.log("_resolveHtml using timeout=5000 identifier=" + identifier)
+    log.debug("_resolveHtml using timeout=5000 identifier=" + identifier)
     _get(identifier, null, function(data, headers, statusCode)
     {
-      console.log("_resolveHtml cb statusCode=" + statusCode + " data=" + data)
+      log.debug("_resolveHtml cb statusCode=" + statusCode + " data=" + data)
       if(statusCode != 200 || data == null)
       {
         callback(null);
@@ -614,10 +615,10 @@ var _resolveHostMeta = function(identifier, strict, callback, fallBackToProxy)
   }
   else
   {
-    console.log("_resolveHostMeta using timeout=5000 identifier=" + identifier)
+    log.debug("_resolveHostMeta using timeout=5000 identifier=" + identifier)
     _get(hostMetaUrl, null, function(data, headers, statusCode)
     {
-      console.log("_resolveHostMeta cb statusCode=" + statusCode + " data=" + data)
+      log.debug("_resolveHostMeta cb statusCode=" + statusCode + " data=" + data)
       if(statusCode != 200 || data == null)
       {
         if(!fallBackToProxy && !strict){
@@ -659,20 +660,20 @@ openid.discover = function(identifier, strict, callback)
   }
 
   // Try XRDS/Yadis discovery
-  console.log("discover discover going to _resolveXri")
+  log.debug("discover discover going to _resolveXri")
   _resolveXri(identifier, function(providers)
   {
-    console.log("discover _resolveXri CB providers=" + JSON.stringify(providers))
+    log.debug("discover _resolveXri CB providers=" + JSON.stringify(providers))
     if(providers == null || providers.length == 0)
     {
       // Fallback to HTML discovery
-      console.log("discover _resolveXri CB discover going to _resolveXri")
+      log.debug("discover _resolveXri CB discover going to _resolveXri")
       _resolveHtml(identifier, function(providers)
       {
-        console.log("discover _resolveXri _resolveXri CB providers=" + JSON.stringify(providers))
+        log.debug("discover _resolveXri _resolveXri CB providers=" + JSON.stringify(providers))
         if(providers == null || providers.length == 0){
           _resolveHostMeta(identifier, strict, function(providers){
-            console.log("discover _resolveXri _resolveXri _resolveHostMeta CB providers=" + JSON.stringify(providers))
+            log.debug("discover _resolveXri _resolveXri _resolveHostMeta CB providers=" + JSON.stringify(providers))
             callback(null, providers);
           });
         }
@@ -1139,10 +1140,10 @@ var _verifyDiscoveredInformation = function(params, stateless, extensions, stric
   }
 
   claimedIdentifier = _getCanonicalClaimedIdentifier(claimedIdentifier);
-  console.log("_verifyDiscoveredInformation claimedIdentifier=" + claimedIdentifier)
+  log.debug("_verifyDiscoveredInformation claimedIdentifier=" + claimedIdentifier)
   openid.loadDiscoveredInformation(claimedIdentifier, function(error, provider)
   {
-    console.log("_verifyAssertionAgainstProvider loadDiscoveredInformation Callback: provider=" + JSON.stringify(provider) + "useLocalIdentifierAsKey=" + useLocalIdentifierAsKey)
+    log.debug("_verifyAssertionAgainstProvider loadDiscoveredInformation Callback: provider=" + JSON.stringify(provider) + "useLocalIdentifierAsKey=" + useLocalIdentifierAsKey)
     if(error)
     {
       return callback({ message: 'An error occured when loading previously discovered information about the claimed identifier' });
@@ -1156,10 +1157,10 @@ var _verifyDiscoveredInformation = function(params, stateless, extensions, stric
       return callback({ message: 'OpenID 1.0/1.1 response received, but no information has been discovered about the provider. It is likely that this is a fraudulent authentication response.' });
     }
 
-    console.log("_verifyAssertionAgainstProvider loadDiscoveredInformation Callback: going to discover")
+    log.debug("_verifyAssertionAgainstProvider loadDiscoveredInformation Callback: going to discover")
     openid.discover(claimedIdentifier, strict, function(error, providers)
     {
-      console.log("_verifyAssertionAgainstProvider discover Callback: providers=" + JSON.stringify(providers))
+      log.debug("_verifyAssertionAgainstProvider discover Callback: providers=" + JSON.stringify(providers))
       if(error)
       {
         return callback(error);
@@ -1171,7 +1172,7 @@ var _verifyDiscoveredInformation = function(params, stateless, extensions, stric
 
       for(var i = 0; i < providers.length; ++i)
       {
-        console.log("_verifyAssertionAgainstProvider discover Callback: provider[" + i + "]=" + JSON.stringify(provider))
+        log.debug("_verifyAssertionAgainstProvider discover Callback: provider[" + i + "]=" + JSON.stringify(provider))
         var provider = providers[i];
         if(!provider.version || provider.version.indexOf(params['openid.ns']) !== 0)
         {
@@ -1187,7 +1188,7 @@ var _verifyDiscoveredInformation = function(params, stateless, extensions, stric
 
 var _verifyAssertionAgainstProvider = function(provider, params, stateless, extensions, callback)
 {
-  console.log("_verifyAssertionAgainstProvider provider=" + JSON.stringify(provider) + "params=" + JSON.stringify(params))
+  log.debug("_verifyAssertionAgainstProvider provider=" + JSON.stringify(provider) + "params=" + JSON.stringify(params))
   if(provider.version.indexOf('2.0') !== -1)
   {
     var endpoint = params['openid.op_endpoint'];
@@ -1303,7 +1304,7 @@ var _checkSignatureUsingProvider = function(params, provider, callback)
   {
     'openid.mode' : 'check_authentication'
   };
-  console.log("_checkSignatureUsingProvider provider=" + JSON.stringify(provider) + "params=" + JSON.stringify(params))
+  log.debug("_checkSignatureUsingProvider provider=" + JSON.stringify(provider) + "params=" + JSON.stringify(params))
   for(var key in params)
   {
     if(params.hasOwnProperty(key) && key != 'openid.mode')
