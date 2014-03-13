@@ -261,7 +261,7 @@ var _get = function(getUrl, params, callback, redirects, timeout)
   if (timeout != null) {
     request.setTimeout(timeout, function()
     {
-      return new Error("Timeout");
+      request.abort();
     });
   }
   request.on('error', function(error)
@@ -508,7 +508,7 @@ var _parseHostMeta = function(hostMeta, callback)
   }
 }
 
-var _resolveXri = function(xriUrl, callback, hops)
+var _resolveXri = function(xriUrl, callback, hops, timeout)
 {
   if(!hops)
   {
@@ -555,7 +555,7 @@ var _resolveXri = function(xriUrl, callback, hops)
         return _resolveHtml(xriUrl, callback, hops + 1, data);
       }
     }
-  });
+  }, null, timeout);
 }
 
 var _resolveHtml = function(identifier, callback, hops, data)
@@ -666,7 +666,7 @@ openid.discover = function(identifier, strict, callback)
         else{
           callback(null, providers);
         }
-      });
+      }, null, 5000);
     }
     else
     {
@@ -1143,7 +1143,7 @@ var _verifyDiscoveredInformation = function(params, stateless, extensions, stric
 
     openid.discover(claimedIdentifier, strict, function(error, providers)
     {
-      if(error)
+     if(error)
       {
         return callback(error);
       }
