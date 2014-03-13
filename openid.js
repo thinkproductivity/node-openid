@@ -581,7 +581,7 @@ var _resolveHtml = function(identifier, callback, hops, data)
       {
         _parseHtml(identifier, data, callback, hops + 1);
       }
-    }, null, 1);
+    }, null, 5000);
   }
   else
   {
@@ -633,7 +633,7 @@ var _resolveHostMeta = function(identifier, strict, callback, fallBackToProxy)
           }
         });
       }
-    }, null, 1);
+    }, null, 5000);
   }
 }
 
