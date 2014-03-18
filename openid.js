@@ -212,7 +212,7 @@ var _proxyRequest = function(protocol, options)
 
 var _get = function(getUrl, params, callback, redirects, timeout)
 {
-  log.debug("_get using timeout=" + timeout + "getUrl=" + JSON.stringify(getUrl));
+  log.debug("_get using timeout=" + timeout + ", getUrl=" + JSON.stringify(getUrl));
   redirects = redirects || 5;
   getUrl = url.parse(_buildUrl(getUrl, params));
 
@@ -261,10 +261,10 @@ var _get = function(getUrl, params, callback, redirects, timeout)
     res.on('close', function() { done(); });
   })
   if (timeout != null) {
-    log.debug("_get using timeout=" + timeout);
+    log.debug("_get using timeout=" + timeout + ", getUrl=" + JSON.stringify(getUrl));
     request.setTimeout(timeout, function()
     {
-      log.debug("_get timed out - aborting");
+      log.debug("_get timed out - aborting" + ", getUrl=" + JSON.stringify(getUrl));
       request.abort();
     });
   }
@@ -524,6 +524,7 @@ var _resolveXri = function(xriUrl, callback, hops, timeout)
     return callback(null);
   }
 
+  log.debug("_resolveXri using timeout=" + timeout + ", xriUrl=" + xriUrl);
   _get(xriUrl, null, function(data, headers, statusCode)
   {
     if(statusCode != 200)
@@ -576,10 +577,10 @@ var _resolveHtml = function(identifier, callback, hops, data)
 
   if(data == null)
   {
-    log.debug("_resolveHtml using timeout=5000 identifier=" + identifier)
+    log.debug("_resolveHtml using timeout=5000 identifier=" + identifier);
     _get(identifier, null, function(data, headers, statusCode)
     {
-      log.debug("_resolveHtml cb statusCode=" + statusCode + " data=" + data)
+      log.debug("_resolveHtml cb statusCode=" + statusCode + " data=" + data);
       if(statusCode != 200 || data == null)
       {
         callback(null);
@@ -615,10 +616,10 @@ var _resolveHostMeta = function(identifier, strict, callback, fallBackToProxy)
   }
   else
   {
-    log.debug("_resolveHostMeta using timeout=5000 identifier=" + identifier)
+    log.debug("_resolveHostMeta using timeout=5000 identifier=" + identifier);
     _get(hostMetaUrl, null, function(data, headers, statusCode)
     {
-      log.debug("_resolveHostMeta cb statusCode=" + statusCode + " data=" + data)
+      log.debug("_resolveHostMeta cb statusCode=" + statusCode + " data=" + data);
       if(statusCode != 200 || data == null)
       {
         if(!fallBackToProxy && !strict){
@@ -660,27 +661,27 @@ openid.discover = function(identifier, strict, callback)
   }
 
   // Try XRDS/Yadis discovery
-  log.debug("discover discover going to _resolveXri")
+  log.debug("discover discover going to _resolveXri for identifier=" + identifier);
   _resolveXri(identifier, function(providers)
   {
-    log.debug("discover _resolveXri CB providers=" + JSON.stringify(providers))
+    log.debug("discover _resolveXri CB providers=" + JSON.stringify(providers));
     if(providers == null || providers.length == 0)
     {
       // Fallback to HTML discovery
-      log.debug("discover _resolveXri CB discover going to _resolveXri")
+      log.debug("discover _resolveXri CB discover going to _resolveXri");
       _resolveHtml(identifier, function(providers)
       {
-        log.debug("discover _resolveXri _resolveXri CB providers=" + JSON.stringify(providers))
+        log.debug("discover _resolveXri _resolveXri CB providers=" + JSON.stringify(providers));
         if(providers == null || providers.length == 0){
           _resolveHostMeta(identifier, strict, function(providers){
-            log.debug("discover _resolveXri _resolveXri _resolveHostMeta CB providers=" + JSON.stringify(providers))
+            log.debug("discover _resolveXri _resolveXri _resolveHostMeta CB providers=" + JSON.stringify(providers));
             callback(null, providers);
           });
         }
         else{
           callback(null, providers);
         }
-      }, null, 5000);
+      });
     }
     else
     {
@@ -698,7 +699,7 @@ openid.discover = function(identifier, strict, callback)
       }
       callback(null, providers);
     }
-  });
+  }, null, 5000);
 }
 
 var _createDiffieHellmanKeyExchange = function(algorithm)
@@ -1140,10 +1141,10 @@ var _verifyDiscoveredInformation = function(params, stateless, extensions, stric
   }
 
   claimedIdentifier = _getCanonicalClaimedIdentifier(claimedIdentifier);
-  log.debug("_verifyDiscoveredInformation claimedIdentifier=" + claimedIdentifier)
+  log.debug("_verifyDiscoveredInformation claimedIdentifier=" + claimedIdentifier);
   openid.loadDiscoveredInformation(claimedIdentifier, function(error, provider)
   {
-    log.debug("_verifyAssertionAgainstProvider loadDiscoveredInformation Callback: provider=" + JSON.stringify(provider) + "useLocalIdentifierAsKey=" + useLocalIdentifierAsKey)
+    log.debug("_verifyAssertionAgainstProvider loadDiscoveredInformation Callback: provider=" + JSON.stringify(provider) + "useLocalIdentifierAsKey=" + useLocalIdentifierAsKey);
     if(error)
     {
       return callback({ message: 'An error occured when loading previously discovered information about the claimed identifier' });
@@ -1157,10 +1158,10 @@ var _verifyDiscoveredInformation = function(params, stateless, extensions, stric
       return callback({ message: 'OpenID 1.0/1.1 response received, but no information has been discovered about the provider. It is likely that this is a fraudulent authentication response.' });
     }
 
-    log.debug("_verifyAssertionAgainstProvider loadDiscoveredInformation Callback: going to discover")
+    log.debug("_verifyAssertionAgainstProvider loadDiscoveredInformation Callback: going to discover");
     openid.discover(claimedIdentifier, strict, function(error, providers)
     {
-      log.debug("_verifyAssertionAgainstProvider discover Callback: providers=" + JSON.stringify(providers))
+      log.debug("_verifyAssertionAgainstProvider discover Callback: providers=" + JSON.stringify(providers));
       if(error)
       {
         return callback(error);
@@ -1188,7 +1189,7 @@ var _verifyDiscoveredInformation = function(params, stateless, extensions, stric
 
 var _verifyAssertionAgainstProvider = function(provider, params, stateless, extensions, callback)
 {
-  log.debug("_verifyAssertionAgainstProvider provider=" + JSON.stringify(provider) + "params=" + JSON.stringify(params))
+  log.debug("_verifyAssertionAgainstProvider provider=" + JSON.stringify(provider) + ", params=" + JSON.stringify(params));
   if(provider.version.indexOf('2.0') !== -1)
   {
     var endpoint = params['openid.op_endpoint'];
@@ -1304,7 +1305,7 @@ var _checkSignatureUsingProvider = function(params, provider, callback)
   {
     'openid.mode' : 'check_authentication'
   };
-  log.debug("_checkSignatureUsingProvider provider=" + JSON.stringify(provider) + "params=" + JSON.stringify(params))
+  log.debug("_checkSignatureUsingProvider provider=" + JSON.stringify(provider) + ", params=" + JSON.stringify(params));
   for(var key in params)
   {
     if(params.hasOwnProperty(key) && key != 'openid.mode')
