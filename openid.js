@@ -32,7 +32,7 @@ var convert = require('./lib/convert'),
     https = require('https'),
     querystring = require('querystring'),
     url = require('url'),
-    xrds = require('./lib/xrds');
+    xrds = require('./lib/xrds'),
     log = require('../../lib/logger')('openid');
 
 var _associations = {};
